@@ -1,0 +1,66 @@
+services:
+  app:
+    build:
+      context: .
+      target: development
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_NAME: ${DATABASE_NAME:-postgres}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      DATABASE_PORT: "5432"
+      DATABASE_HOST: db
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+    command: >-
+      sh -c "npm run build &&
+      npx concurrently
+      \"npx webpack --watch --progress\"
+      \"npm run dev -- --watch --verbose-watch --ignore-watch='node_modules .git .sqlite'\""
+
+  test:
+    build:
+      context: .
+      target: development
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      DATABASE_NAME: ${DATABASE_NAME:-postgres}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      DATABASE_PORT: "5432"
+      DATABASE_HOST: db
+    profiles:
+      - test
+    volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+    command: npm test -s
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-postgres}
+      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${DATABASE_USERNAME:-postgres} -d ${DATABASE_NAME:-postgres}
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  app_node_modules:
+  postgres_data:

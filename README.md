@@ -1,45 +1,57 @@
 # JS Fastify Blog
 
-[![Main](https://github.com/hexlet-components/js-fastify-blog/actions/workflows/main.yml/badge.svg)](https://github.com/hexlet-components/js-fastify-blog/actions/workflows/main.yml)
+## Requirements
 
-## Requirement
+- Docker and Docker Compose for containerized development
+- Node.js 20+ for running the project without Docker
 
-* NodeJS v20.6.1
-* Sqlite или PostgreSQL
+## Local development in Docker
 
-## Commands
+Prepare a local `.env` file:
+
+```bash
+make prepare-env
+```
+
+Start the application and PostgreSQL:
+
+```bash
+make docker-dev
+```
+
+The application will be available at `http://localhost:8080`.
+
+## Running tests in Docker
+
+```bash
+make docker-test
+```
+
+## Building a production image
+
+```bash
+make docker-image
+docker run --rm -p 8080:8080 \
+  -e DATABASE_NAME=postgres \
+  -e DATABASE_USERNAME=postgres \
+  -e DATABASE_PASSWORD=postgres \
+  -e DATABASE_PORT=5432 \
+  -e DATABASE_HOST=<postgres-host> \
+  javascript-fastify-blog:latest
+```
+
+For a standalone container, point `DATABASE_HOST` to an external PostgreSQL host that is reachable from the container.
+
+## Local development without Docker
+
+If database environment variables are not specified, the project falls back to SQLite for `development` and `test`.
 
 ```bash
 make install
 make dev
 ```
 
-## Run tests with Postgres
-
-To run tests with Postgres, you need to edit *config/config.cjs* and under the `test` key comment out the use of SQLite and uncomment the environment variables
-
-```js
-  // test: {
-  //   dialect: 'sqlite',
-  //   storage: './database.test.sqlite',
-  // },
-  test: {
-    dialect: 'postgres',
-    database: process.env.DATABASE_NAME,
-    username: process.env.DATABASE_USERNAME,
-    password: process.env.DATABASE_PASSWORD,
-    port: process.env.DATABASE_PORT,
-    host: process.env.DATABASE_HOST,
-  },
-```
-
-Specify environment variables manually or prepare a *.env* file with the command
-
-```bash
-make prepare-env
-```
-
-In it specify the data to connect to the database
+To use PostgreSQL outside Docker, prepare `.env` and specify the connection settings:
 
 ```dotenv
 DATABASE_NAME=postgres
@@ -49,16 +61,14 @@ DATABASE_PORT=5432
 DATABASE_HOST=localhost
 ```
 
-## Running an application with Postgres (production)
+## CI and publishing
 
-Export environment variables to work with the database or prepare a *.env* file with variables
+GitHub Actions runs lint and tests inside Docker containers. On pushes to `main`, the workflow builds the production image and publishes it to Docker Hub.
 
-Run
+Required repository secrets:
 
-```bash
-make build # build assets
-make start # Open in browser: http://localhost:8080
-```
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
 
 ---
 

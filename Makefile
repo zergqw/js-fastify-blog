@@ -1,3 +1,6 @@
+DOCKER_COMPOSE ?= $(shell if docker compose version >/dev/null 2>&1; then printf '%s' 'docker compose'; elif command -v docker-compose >/dev/null 2>&1; then printf '%s' 'docker-compose'; else printf '%s' 'docker compose'; fi)
+DOCKER_IMAGE ?= javascript-fastify-blog
+
 setup: install db-migrate
 
 install:
@@ -32,3 +35,18 @@ lint-fix:
 
 test:
 	NODE_ENV=test npm test -s
+
+docker-build:
+	$(DOCKER_COMPOSE) build app
+
+docker-dev:
+	$(DOCKER_COMPOSE) up --build app
+
+docker-test:
+	$(DOCKER_COMPOSE) --profile test up --build --abort-on-container-exit --exit-code-from test test
+
+docker-down:
+	$(DOCKER_COMPOSE) down --volumes --remove-orphans
+
+docker-image:
+	docker build --target production -t $(DOCKER_IMAGE):latest .
